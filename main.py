@@ -4,14 +4,12 @@ from bs4 import BeautifulSoup
 from nltk.tokenize import sent_tokenize, word_tokenize
 from transformers import pipeline
 
-class ContentAggregator:
+
+class WebSearchEngine:
     def __init__(self):
         self.search_engine = "https://www.google.com/search?q="
-        self.robot_parser = urllib.robotparser.RobotFileParser()
-        self.robot_parser.set_url("https://example.com/robots.txt")
-        self.robot_parser.read()
 
-    def search_web(self, query):
+    def search(self, query):
         query_url = self.search_engine + query
         response = requests.get(query_url)
         if response.status_code == 200:
@@ -19,7 +17,30 @@ class ContentAggregator:
         else:
             return None
 
-    def extract_content(self, html):
+
+class RobotParser:
+    def __init__(self):
+        self.robot_parser = urllib.robotparser.RobotFileParser()
+        self.robot_parser.set_url("https://example.com/robots.txt")
+        self.robot_parser.read()
+
+    def is_allowed(self, url):
+        return self.robot_parser.can_fetch('*', url)
+
+
+class ContentExtractor:
+    def __init__(self):
+        self.search_engine = WebSearchEngine()
+        self.robot_parser = RobotParser()
+
+    def extract_from_web(self, query):
+        html = self.search_engine.search(query)
+        if html is not None:
+            return self.extract_from_html(html)
+        else:
+            return None
+
+    def extract_from_html(self, html):
         soup = BeautifulSoup(html, "html.parser")
         article_titles = soup.find_all("h2", class_="article-title")
         descriptions = soup.find_all("div", class_="description")
@@ -37,7 +58,7 @@ class ContentAggregator:
         return extracted_content
 
 
-class CurationSystem:
+class ContentCuration:
     def __init__(self):
         self.content = []
 
@@ -50,7 +71,8 @@ class CurationSystem:
         if criteria == "relevance":
             curated_content = self.content
         elif criteria == "popularity":
-            curated_content = sorted(self.content, key=lambda x: x['popularity'], reverse=True)
+            curated_content = sorted(
+                self.content, key=lambda x: x['popularity'], reverse=True)
         elif criteria == "user_preferences":
             # Implement user preferences based curation logic here
             curated_content = self.content
@@ -66,7 +88,8 @@ class NLPProcessor:
     def summarize_content(self, content):
         summarized_content = []
         for c in content:
-            summary = self.summarizer(c["description"], max_length=50, min_length=10, do_sample=False)[0]['summary_text']
+            summary = self.summarizer(c["description"], max_length=50, min_length=10, do_sample=False)[0][
+                'summary_text']
             c["summary"] = summary
             summarized_content.append(c)
 
@@ -82,7 +105,7 @@ class NLPProcessor:
         return extracted_keywords
 
 
-class CustomizationSystem:
+class ContentCustomization:
     def __init__(self):
         pass
 
@@ -92,15 +115,19 @@ class CustomizationSystem:
         if "format" in options:
             fmt = options["format"]
             if fmt == "articles":
-                customized_content = [c for c in content if "article" in c.get("format")]
+                customized_content = [
+                    c for c in content if "article" in c.get("format")]
             elif fmt == "blogs":
-                customized_content = [c for c in content if "blog" in c.get("format")]
+                customized_content = [
+                    c for c in content if "blog" in c.get("format")]
             elif fmt == "social_media_posts":
-                customized_content = [c for c in content if "social_media_post" in c.get("format")]
+                customized_content = [
+                    c for c in content if "social_media_post" in c.get("format")]
 
         if "length" in options:
             length = options["length"]
-            customized_content = [c for c in customized_content if len(c.get("content")) <= length]
+            customized_content = [
+                c for c in customized_content if len(c.get("content")) <= length]
 
         if "tone" in options:
             tone = options["tone"]
@@ -111,26 +138,29 @@ class CustomizationSystem:
 
 class AutonomousOperation:
     def __init__(self):
-        self.content_aggregator = ContentAggregator()
-        self.curation_system = CurationSystem()
+        self.content_extractor = ContentExtractor()
+        self.content_curation = ContentCuration()
         self.nlp_processor = NLPProcessor()
-        self.customization_system = CustomizationSystem()
+        self.content_customization = ContentCustomization()
 
     def autonomous_scraping(self, query):
-        html = self.content_aggregator.search_web(query)
+        html = self.content_extractor.extract_from_web(query)
         if html is not None:
-            extracted_content = self.content_aggregator.extract_content(html)
-            self.curation_system.aggregate_content(extracted_content)
+            extracted_content = self.content_extractor.extract_from_html(html)
+            self.content_curation.aggregate_content(extracted_content)
 
     def automate_curation(self, criteria):
-        curated_content = self.curation_system.curate_content(criteria)
-        summarized_content = self.nlp_processor.summarize_content(curated_content)
-        extracted_keywords = self.nlp_processor.extract_keywords(summarized_content)
+        curated_content = self.content_curation.curate_content(criteria)
+        summarized_content = self.nlp_processor.summarize_content(
+            curated_content)
+        extracted_keywords = self.nlp_processor.extract_keywords(
+            summarized_content)
         return extracted_keywords
 
     def generate_customized_content(self, options):
-        curated_content = self.curation_system.curate_content("relevance")
-        customized_content = self.customization_system.customize_content(curated_content, options)
+        curated_content = self.content_curation.curate_content("relevance")
+        customized_content = self.content_customization.customize_content(
+            curated_content, options)
         return customized_content
 
     def autonomous_workflow(self, query, criteria, options):
@@ -143,10 +173,10 @@ class AutonomousOperation:
 class DeploymentSystem:
     def __init__(self):
         self.openai_endpoint = "https://api.openai.com/v1/assistants"
-        self.openai_key = "INSERT_OPENAI_API_KEY"
 
-    def deploy(self, program):
-        response = requests.post(self.openai_endpoint, headers={"Authorization": self.openai_key}, json=program)
+    def deploy(self, program, api_key):
+        response = requests.post(self.openai_endpoint, headers={
+                                 "Authorization": api_key}, json=program)
         if response.status_code == 200:
             return response.json()
         else:
@@ -168,19 +198,21 @@ class AutonomousWebContentSystem:
         self.deployment_system = DeploymentSystem()
         self.error_handling_system = ErrorHandlingSystem()
 
-    def autonomous_web_content_generation(self, query, criteria, options):
+    def autonomous_web_content_generation(self, query, criteria, options, api_key):
         try:
-            content = self.autonomous_operation.autonomous_workflow(query, criteria, options)
+            content = self.autonomous_operation.autonomous_workflow(
+                query, criteria, options)
             program = {
                 "role": "user",
                 "content": content
             }
-            response = self.deployment_system.deploy(program)
+            response = self.deployment_system.deploy(program, api_key)
 
             if response is not None:
                 return response.get("content")
             else:
-                self.error_handling_system.handle_errors("Failed to deploy assistant.")
+                self.error_handling_system.handle_errors(
+                    "Failed to deploy assistant.")
                 return None
         except Exception as e:
             self.error_handling_system.handle_errors(e)
@@ -195,5 +227,7 @@ options = {
     "format": "articles",
     "length": 500
 }
-generated_content = autonomous_system.autonomous_web_content_generation(query, criteria, options)
+api_key = "INSERT_OPENAI_API_KEY"
+generated_content = autonomous_system.autonomous_web_content_generation(
+    query, criteria, options, api_key)
 print(generated_content)
